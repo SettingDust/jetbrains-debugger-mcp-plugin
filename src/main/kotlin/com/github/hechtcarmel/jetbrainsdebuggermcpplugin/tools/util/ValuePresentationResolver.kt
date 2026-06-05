@@ -153,7 +153,17 @@ object ValuePresentationResolver {
     }
 
     private fun isPlaceholderValue(value: String): Boolean {
-        return placeholderValues.contains(value.trim())
+        return placeholderValues.contains(normalizePlaceholderCandidate(value))
+    }
+
+    private fun normalizePlaceholderCandidate(value: String): String {
+        val trimmed = value.trim()
+        val unquoted = when {
+            trimmed.length >= 2 && trimmed.first() == '"' && trimmed.last() == '"' -> trimmed.substring(1, trimmed.length - 1)
+            trimmed.length >= 2 && trimmed.first() == '\'' && trimmed.last() == '\'' -> trimmed.substring(1, trimmed.length - 1)
+            else -> trimmed
+        }
+        return unquoted.replace("\u2026", "...")
     }
 
     private class PresentationCaptureState {
