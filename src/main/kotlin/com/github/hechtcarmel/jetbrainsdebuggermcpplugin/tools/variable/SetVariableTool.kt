@@ -4,7 +4,7 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolAnnot
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallResult
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.SetVariableResult
-import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VariablePresentationUtils
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.ValuePresentationResolver
 import com.intellij.openapi.project.Project
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.xdebugger.XDebuggerUtil
@@ -15,6 +15,8 @@ import com.intellij.xdebugger.frame.XDebuggerTreeNodeHyperlink
 import com.intellij.xdebugger.frame.XStackFrame
 import com.intellij.xdebugger.frame.XValue
 import com.intellij.xdebugger.frame.XValueChildrenList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
@@ -133,11 +135,12 @@ class SetVariableTool : AbstractMcpTool() {
                             if (name == targetName) {
                                 foundVariable = children.getValue(i)
                                 pendingPresentations++
-                                VariablePresentationUtils.computeSimplePresentation(foundVariable!!) { displayValue, type ->
+                                CoroutineScope(continuation.context).launch {
+                                    val presentation = ValuePresentationResolver.resolve(foundVariable!!, timeoutMillis = 1500L)
                                     synchronized(this@SetVariableTool) {
-                                        result = VariableData(foundVariable!!, displayValue, type)
+                                        result = VariableData(foundVariable!!, presentation.value, presentation.type)
                                         pendingPresentations--
-                                        if (!completed) {
+                                        if (!completed && continuation.isActive) {
                                             completed = true
                                             continuation.resume(result)
                                         }
@@ -187,13 +190,18 @@ class SetVariableTool : AbstractMcpTool() {
                     xExpression,
                     object : XDebuggerEvaluator.XEvaluationCallback {
                         override fun evaluated(result: XValue) {
-                            VariablePresentationUtils.computeSimplePresentation(result) { valueText, _ ->
-                                continuation.resume(SetResult(success = true, resultValue = valueText))
+                            CoroutineScope(continuation.context).launch {
+                                val presentation = ValuePresentationResolver.resolve(result, timeoutMillis = 1500L)
+                                if (continuation.isActive) {
+                                    continuation.resume(SetResult(success = true, resultValue = presentation.value))
+                                }
                             }
                         }
 
                         override fun errorOccurred(errorMessage: String) {
-                            continuation.resume(SetResult(success = false, error = errorMessage))
+                            if (continuation.isActive) {
+                                continuation.resume(SetResult(success = false, error = errorMessage))
+                            }
                         }
                     },
                     null

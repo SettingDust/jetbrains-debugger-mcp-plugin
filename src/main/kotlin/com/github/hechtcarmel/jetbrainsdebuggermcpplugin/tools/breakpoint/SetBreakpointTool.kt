@@ -5,10 +5,10 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallR
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.SetBreakpointResult
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.LogMessageTransformer
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VirtualFileResolver
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.xdebugger.XDebuggerUtil
 import com.intellij.xdebugger.breakpoints.XBreakpointProperties
 import com.intellij.xdebugger.breakpoints.XBreakpointType
@@ -104,7 +104,7 @@ class SetBreakpointTool : AbstractMcpTool() {
         val temporary = arguments["temporary"]?.jsonPrimitive?.booleanOrNull ?: false
 
         // Find the file
-        val virtualFile = LocalFileSystem.getInstance().findFileByPath(filePath)
+        val virtualFile = VirtualFileResolver.findFile(filePath)
             ?: return createErrorResult("File not found: $filePath")
 
         val breakpointManager = getDebuggerManager(project).breakpointManager

@@ -7,12 +7,13 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.EvaluateResponse
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.EvaluationResult
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.StackFrameUtils
-import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VariablePresentationUtils
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.ValuePresentationResolver
 import com.intellij.openapi.project.Project
 import com.intellij.xdebugger.XDebuggerUtil
 import com.intellij.xdebugger.evaluation.EvaluationMode
 import com.intellij.xdebugger.evaluation.XDebuggerEvaluator
-import com.intellij.xdebugger.frame.XValue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
@@ -126,25 +127,38 @@ class EvaluateTool : AbstractMcpTool() {
                 evaluator.evaluate(
                     xExpression,
                     object : XDebuggerEvaluator.XEvaluationCallback {
-                        override fun evaluated(result: XValue) {
-                            VariablePresentationUtils.computeFullPresentation(result) { presentation ->
-                                continuation.resume(EvaluationResult(
-                                    expression = expression,
-                                    value = presentation.value,
-                                    type = presentation.type,
-                                    hasChildren = presentation.hasChildren
-                                ))
+                        override fun evaluated(result: com.intellij.xdebugger.frame.XValue) {
+                            CoroutineScope(continuation.context).launch {
+                                val presentation = ValuePresentationResolver.resolve(result, timeoutMillis = 2000L)
+                                if (continuation.isActive) {
+                                    continuation.resume(EvaluationResult(
+                                        expression = expression,
+                                        value = presentation.value,
+                                        type = presentation.type,
+                                        hasChildren = presentation.hasChildren,
+                                        error = presentation.error,
+                                        presentationStatus = presentation.presentationStatus,
+                                        isValueComplete = presentation.isValueComplete,
+                                        fullValue = presentation.fullValue
+                                    ))
+                                }
                             }
                         }
 
                         override fun errorOccurred(errorMessage: String) {
-                            continuation.resume(EvaluationResult(
-                                expression = expression,
-                                value = "",
-                                type = "error",
-                                hasChildren = false,
-                                error = errorMessage
-                            ))
+                            val failure = ValuePresentationResolver.failed(errorMessage)
+                            if (continuation.isActive) {
+                                continuation.resume(EvaluationResult(
+                                    expression = expression,
+                                    value = failure.value,
+                                    type = failure.type,
+                                    hasChildren = failure.hasChildren,
+                                    error = failure.error,
+                                    presentationStatus = failure.presentationStatus,
+                                    isValueComplete = failure.isValueComplete,
+                                    fullValue = failure.fullValue
+                                ))
+                            }
                         }
                     },
                     null

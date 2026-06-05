@@ -59,6 +59,10 @@ class GetDebugSessionStatusTool : AbstractMcpTool() {
                         putJsonObject("value") { put("type", "string") }
                         putJsonObject("type") { put("type", "string") }
                         putJsonObject("hasChildren") { put("type", "boolean") }
+                        putJsonObject("presentationStatus") { putJsonArray("type") { add(JsonPrimitive("string")); add(JsonPrimitive("null")) } }
+                        putJsonObject("isValueComplete") { put("type", "boolean") }
+                        putJsonObject("fullValue") { putJsonArray("type") { add(JsonPrimitive("string")); add(JsonPrimitive("null")) } }
+                        putJsonObject("error") { putJsonArray("type") { add(JsonPrimitive("string")); add(JsonPrimitive("null")) } }
                     }
                 }
                 put("description", "Variables visible in current stack frame")

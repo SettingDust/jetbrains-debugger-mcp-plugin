@@ -5,10 +5,10 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallR
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.SourceContext
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.SourceLine
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VirtualFileResolver
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.xdebugger.breakpoints.XLineBreakpoint
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
@@ -92,7 +92,7 @@ class GetSourceContextTool : AbstractMcpTool() {
             centerLine = position.line + 1
         }
 
-        val virtualFile = LocalFileSystem.getInstance().findFileByPath(filePath)
+        val virtualFile = VirtualFileResolver.findFile(filePath)
             ?: return createErrorResult("File not found: $filePath")
 
         val (startLine, endLine, lines) = readAction {

@@ -15,7 +15,11 @@ data class VariableInfo(
     val hasChildren: Boolean = false,
     val scope: String? = null,
     val declaredType: String? = null,
-    val isStatic: Boolean = false
+    val isStatic: Boolean = false,
+    val presentationStatus: String? = null,
+    val isValueComplete: Boolean = true,
+    val fullValue: String? = null,
+    val error: String? = null
 )
 
 /**

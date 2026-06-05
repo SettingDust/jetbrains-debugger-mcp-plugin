@@ -13,7 +13,10 @@ data class EvaluationResult(
     val value: String,
     val type: String,
     val hasChildren: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val presentationStatus: String? = null,
+    val isValueComplete: Boolean = true,
+    val fullValue: String? = null
 )
 
 /**

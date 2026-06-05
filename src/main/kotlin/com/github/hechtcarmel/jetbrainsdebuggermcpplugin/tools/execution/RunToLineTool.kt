@@ -4,9 +4,9 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolAnnot
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallResult
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.ExecutionControlResult
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VirtualFileResolver
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.xdebugger.XDebuggerUtil
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -69,7 +69,7 @@ class RunToLineTool : AbstractMcpTool() {
             return createErrorResult("Session must be paused to run to line")
         }
 
-        val virtualFile = LocalFileSystem.getInstance().findFileByPath(filePath)
+        val virtualFile = VirtualFileResolver.findFile(filePath)
             ?: return createErrorResult("File not found: $filePath")
 
         val position = XDebuggerUtil.getInstance().createPosition(virtualFile, line - 1)
