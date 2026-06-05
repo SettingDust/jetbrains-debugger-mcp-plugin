@@ -21,7 +21,7 @@ class ValuePresentationResolverTest {
     fun resolvesRealValueAfterPlaceholder() = runBlocking {
         val value = object : XValue() {
             override fun computePresentation(node: XValueNode, place: XValuePlace) {
-                node.setPresentation(null, null, "Collecting data...", false)
+                node.setPresentation(null, null, "Collecting data...", true)
                 thread {
                     Thread.sleep(50)
                     node.setPresentation(null, null, "42", false)
@@ -40,7 +40,7 @@ class ValuePresentationResolverTest {
     fun marksRawChineseUnicodeEllipsisPlaceholderTimeoutAsIncomplete() = runBlocking {
         val value = object : XValue() {
             override fun computePresentation(node: XValueNode, place: XValuePlace) {
-                node.setPresentation(null, null, "正在收集数据…", false)
+                node.setPresentation(null, null, "正在收集数据…", true)
             }
         }
 
@@ -55,7 +55,7 @@ class ValuePresentationResolverTest {
     fun marksRawEnglishUnicodeEllipsisPlaceholderTimeoutAsIncomplete() = runBlocking {
         val value = object : XValue() {
             override fun computePresentation(node: XValueNode, place: XValuePlace) {
-                node.setPresentation(null, null, "Collecting data…", false)
+                node.setPresentation(null, null, "Collecting data…", true)
             }
         }
 
@@ -70,7 +70,7 @@ class ValuePresentationResolverTest {
     fun marksRenderedQuotedChineseUnicodeEllipsisPlaceholderTimeoutAsIncomplete() = runBlocking {
         val value = object : XValue() {
             override fun computePresentation(node: XValueNode, place: XValuePlace) {
-                node.setPresentation(null, stringPresentation("正在收集数据…"), false)
+                node.setPresentation(null, stringPresentation("正在收集数据…"), true)
             }
         }
 
@@ -85,7 +85,7 @@ class ValuePresentationResolverTest {
     fun marksQuotedEnglishUnicodeEllipsisPlaceholderTimeoutAsIncomplete() = runBlocking {
         val value = object : XValue() {
             override fun computePresentation(node: XValueNode, place: XValuePlace) {
-                node.setPresentation(null, null, "\"Collecting data…\"", false)
+                node.setPresentation(null, null, "\"Collecting data…\"", true)
             }
         }
 
@@ -100,7 +100,7 @@ class ValuePresentationResolverTest {
     fun resolvesRealValueAfterUnicodeEllipsisPlaceholder() = runBlocking {
         val value = object : XValue() {
             override fun computePresentation(node: XValueNode, place: XValuePlace) {
-                node.setPresentation(null, null, "正在收集数据…", false)
+                node.setPresentation(null, null, "正在收集数据…", true)
                 thread {
                     Thread.sleep(50)
                     node.setPresentation(null, null, "42", false)
@@ -119,7 +119,7 @@ class ValuePresentationResolverTest {
     fun marksPlaceholderTimeoutAsIncomplete() = runBlocking {
         val value = object : XValue() {
             override fun computePresentation(node: XValueNode, place: XValuePlace) {
-                node.setPresentation(null, null, "Collecting data...", false)
+                node.setPresentation(null, null, "Collecting data...", true)
             }
         }
 
@@ -131,6 +131,36 @@ class ValuePresentationResolverTest {
     }
 
     @Test
+    fun resolvesRealStringThatLooksLikeChinesePlaceholder() = runBlocking {
+        val value = object : XValue() {
+            override fun computePresentation(node: XValueNode, place: XValuePlace) {
+                node.setPresentation(null, "java.lang.String", "\"正在收集数据…\"", false)
+            }
+        }
+
+        val resolved = ValuePresentationResolver.resolve(value, timeoutMillis = 100L)
+
+        assertEquals("\"正在收集数据…\"", resolved.value)
+        assertEquals(ValuePresentationResolver.STATUS_RESOLVED, resolved.presentationStatus)
+        assertTrue(resolved.isValueComplete)
+    }
+
+    @Test
+    fun resolvesRealStringPresentationThatLooksLikeEnglishPlaceholder() = runBlocking {
+        val value = object : XValue() {
+            override fun computePresentation(node: XValueNode, place: XValuePlace) {
+                node.setPresentation(null, stringPresentation("Collecting data…"), false)
+            }
+        }
+
+        val resolved = ValuePresentationResolver.resolve(value, timeoutMillis = 100L)
+
+        assertEquals("\"Collecting data…\"", resolved.value)
+        assertEquals(ValuePresentationResolver.STATUS_RESOLVED, resolved.presentationStatus)
+        assertTrue(resolved.isValueComplete)
+    }
+
+    @Test
     fun collectorReturnsPartialResultsWithoutFailingWholeBatch() = runBlocking {
         val fast = object : XValue() {
             override fun computePresentation(node: XValueNode, place: XValuePlace) {
@@ -139,7 +169,7 @@ class ValuePresentationResolverTest {
         }
         val slowPlaceholder = object : XValue() {
             override fun computePresentation(node: XValueNode, place: XValuePlace) {
-                node.setPresentation(null, null, "正在收集数据...", false)
+                node.setPresentation(null, null, "正在收集数据...", true)
             }
         }
 

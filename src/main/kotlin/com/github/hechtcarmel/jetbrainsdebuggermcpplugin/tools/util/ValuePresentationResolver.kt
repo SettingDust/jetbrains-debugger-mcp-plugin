@@ -152,8 +152,13 @@ object ValuePresentationResolver {
         )
     }
 
-    private fun isPlaceholderValue(value: String): Boolean {
-        return placeholderValues.contains(normalizePlaceholderCandidate(value))
+    private fun isPlaceholderSnapshot(value: String, type: String, hasChildren: Boolean): Boolean {
+        if (!placeholderValues.contains(normalizePlaceholderCandidate(value))) {
+            return false
+        }
+
+        val typeLooksUnresolved = type.isBlank() || type == "unknown"
+        return typeLooksUnresolved && hasChildren
     }
 
     private fun normalizePlaceholderCandidate(value: String): String {
@@ -178,7 +183,7 @@ object ValuePresentationResolver {
                 value = value,
                 type = type ?: "unknown",
                 hasChildren = hasChildren,
-                isPlaceholder = isPlaceholderValue(value)
+                isPlaceholder = isPlaceholderSnapshot(value, type ?: "unknown", hasChildren)
             )
             latest = snapshot
             return snapshot
